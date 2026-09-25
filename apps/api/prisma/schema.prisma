@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum NodeState {
+  LOCKED
+  IN_PROGRESS
+  MASTERED
+  NEEDS_REVISION
+}
+
+model User {
+  id         String       @id @default(cuid())
+  email      String       @unique
+  createdAt  DateTime     @default(now())
+  curricula  Curriculum[]
+  flashcards Flashcard[]
+  streak     Streak?
+}
+
+model Curriculum {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  focus     String
+  graph     Json       // DAG adjacency + node metadata (validated by Zod in API)
+  createdAt DateTime   @default(now())
+  nodes     SkillNode[]
+}
+
+model SkillNode {
+  id           String      @id @default(cuid())
+  curriculumId String
+  curriculum   Curriculum  @relation(fields: [curriculumId], references: [id], onDelete: Cascade)
+  key          String      // stable node key within graph
+  title        String
+  state        NodeState   @default(LOCKED)
+  prerequisites Json       @default("[]") // string[] of node keys
+  masteryScore Float?
+  attempts     Attempt[]
+
+  @@unique([curriculumId, key])
+}
+
+model Attempt {
+  id        String    @id @default(cuid())
+  nodeId    String
+  node      SkillNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  score     Float
+  rubric    Json
+  feedback  String?
+  createdAt DateTime  @default(now())
+}
+
+model Flashcard {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  front        String
+  back         String
+  easiness     Float    @default(2.5) // SM-2 EF
+  interval     Int      @default(0)   // days
+  repetitions  Int      @default(0)
+  nextReviewAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  mimeType  String
+  createdAt DateTime @default(now())
+  chunks    Chunk[]
+}
+
+model Chunk {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  content    String
+  // embedding vector(1536) added via raw SQL migration (pgvector)
+}
+
+model Streak {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  count     Int      @default(0)
+  xp        Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
