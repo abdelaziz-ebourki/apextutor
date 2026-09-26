@@ -4,6 +4,7 @@ Versioned system prompts. Teacher voice only — no student-study-coach prompts.
 
 * `curriculum.v1.ts` (TODO #2)
 * `placement.v1.ts` (TODO #11) — diagnostic quiz generation + level placement
+* `lesson.v1.ts` (#15 scaffolded) — micro-lesson: objectives, 300-600w body, example, misconception, check question; grounded-or-flagged
 * `professor.v1.ts` (TODO #5) — incl. 2-min lesson recap (teacher recap, not student summary)
 * `evaluator.v1.ts` (TODO #6) — rubric: accuracy / clarity / depth
 * `socratic.v1.ts` (TODO #6) — no-direct-answers overlay

@@ -58,6 +58,7 @@ model SkillNode {
   masteryScore Float?
   attempts     Attempt[]
   assignments  Assignment[]
+  lesson       Lesson?
 
   @@unique([curriculumId, key])
 }
@@ -87,6 +88,24 @@ model Assignment {
   score     Float?
   dueAt     DateTime?
   createdAt DateTime         @default(now())
+}
+
+// Teacher's 10-min intro per node (Option B micro-lesson, #15).
+// AI-drafted, read-only, cited. Own-words explanation — never textbook verbatim.
+model Lesson {
+  id            String    @id @default(cuid())
+  nodeId        String    @unique
+  node          SkillNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  objectives    Json // string[2..3], testable verbs
+  body          String // 300-600 words, teacher voice, KaTeX-safe
+  example       String // 1 worked example / analogy
+  misconception String // 1 common pitfall + probe question
+  checkQuestion Json // { question, expectedPoints: string[], hiddenAnswer: string }
+  sourceRefs    Json // { docId?, title, chapter?, pages?, chunkIds: string[] }[]
+  grounded      Boolean // true iff RAG chunks were used
+  version       Int       @default(1)
+  stale         Boolean   @default(false) // set true when new docs upload for the curriculum
+  createdAt     DateTime  @default(now())
 }
 
 model Document {
