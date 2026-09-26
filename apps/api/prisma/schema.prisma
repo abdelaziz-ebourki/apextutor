@@ -14,13 +14,26 @@ enum NodeState {
   NEEDS_REVISION
 }
 
+enum AssignmentType {
+  HOMEWORK
+  RETRIEVAL_PRACTICE
+  MOCK_EXAM
+}
+
+enum AssignmentStatus {
+  ASSIGNED
+  SUBMITTED
+  GRADED
+  OVERDUE
+}
+
 model User {
-  id         String       @id @default(cuid())
-  email      String       @unique
-  createdAt  DateTime     @default(now())
-  curricula  Curriculum[]
-  flashcards Flashcard[]
-  streak     Streak?
+  id          String       @id @default(cuid())
+  email       String       @unique
+  createdAt   DateTime     @default(now())
+  curricula   Curriculum[]
+  assignments Assignment[]
+  streak      Streak? // attendance count + XP-as-grade (gradebook, not game)
 }
 
 model Curriculum {
@@ -44,6 +57,7 @@ model SkillNode {
   prerequisites Json       @default("[]") // string[] of node keys
   masteryScore Float?
   attempts     Attempt[]
+  assignments  Assignment[]
 
   @@unique([curriculumId, key])
 }
@@ -58,17 +72,21 @@ model Attempt {
   createdAt DateTime  @default(now())
 }
 
-model Flashcard {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  front        String
-  back         String
-  easiness     Float    @default(2.5) // SM-2 EF
-  interval     Int      @default(0)   // days
-  repetitions  Int      @default(0)
-  nextReviewAt DateTime @default(now())
-  createdAt    DateTime @default(now())
+// Teacher-assigned work (replaces student-owned flashcards).
+// Retrieval practice covers spaced review: teacher assigns, student completes.
+model Assignment {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodeId    String?
+  node      SkillNode?       @relation(fields: [nodeId], references: [id], onDelete: SetNull)
+  type      AssignmentType
+  status    AssignmentStatus @default(ASSIGNED)
+  title     String
+  payload   Json // questions, difficulty, time limit, source refs
+  score     Float?
+  dueAt     DateTime?
+  createdAt DateTime         @default(now())
 }
 
 model Document {
